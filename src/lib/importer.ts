@@ -317,9 +317,16 @@ export function buildImportRows(
   });
 
   const phoneCounts = new Map<string, number>();
+  const nameCounts = new Map<string, number>();
+
   for (const row of rows) {
-    if (!isValidEgyptianMobile(row.phone)) continue;
-    phoneCounts.set(row.phone, (phoneCounts.get(row.phone) ?? 0) + 1);
+    if (isValidEgyptianMobile(row.phone)) {
+      phoneCounts.set(row.phone, (phoneCounts.get(row.phone) ?? 0) + 1);
+    }
+    const norm = normalizeNameForMatch(row.name);
+    if (norm) {
+      nameCounts.set(norm, (nameCounts.get(norm) ?? 0) + 1);
+    }
   }
 
   for (const row of rows) {
@@ -329,14 +336,33 @@ export function buildImportRows(
         row.errors.push("رقم الهاتف مكرر داخل الملف.");
       }
     }
+    const norm = normalizeNameForMatch(row.name);
+    if (norm && (nameCounts.get(norm) ?? 0) > 1) {
+      row.status = "invalid";
+      if (!row.errors.includes("اسم العميل مكرر داخل الملف.")) {
+        row.errors.push("اسم العميل مكرر داخل الملف.");
+      }
+    }
   }
 
   return rows;
 }
 
+export function normalizeNameForMatch(name: string): string {
+  if (!name) return "";
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[\s\-_.]+/g, " ");
+}
+
 export function buildImportPreview(
   rows: ImportRow[],
   existingPhones: Iterable<string>,
+  existingNames?: Iterable<string>,
 ): ImportPreview {
   const existing = new Set(
     Array.from(existingPhones, (phone) => normalizePhone(phone)).filter((phone) =>
@@ -344,10 +370,35 @@ export function buildImportPreview(
     ),
   );
 
+  const existingNameSet = new Set<string>();
+  if (existingNames) {
+    for (const name of existingNames) {
+      existingNameSet.add(normalizeNameForMatch(name));
+    }
+  }
+
   const previewRows = rows.map<ImportRow>((row) => {
     if (row.status !== "ready") return row;
-    if (!existing.has(row.phone)) return row;
-    return { ...row, status: "duplicate" };
+    
+    const errors = [...row.errors];
+    let isDup = false;
+
+    if (existing.has(row.phone)) {
+      isDup = true;
+      errors.push("رقم الهاتف مسجل بالفعل في قاعدة البيانات.");
+    }
+
+    const normName = normalizeNameForMatch(row.name);
+    if (normName && existingNameSet.has(normName)) {
+      isDup = true;
+      errors.push("اسم العميل مسجل بالفعل في قاعدة البيانات.");
+    }
+
+    if (isDup) {
+      return { ...row, status: "duplicate", errors };
+    }
+
+    return row;
   });
 
   return {

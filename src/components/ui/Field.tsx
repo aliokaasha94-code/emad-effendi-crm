@@ -9,8 +9,8 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const controlBase =
-  "w-full rounded-xl border bg-white/5 px-3 text-sm text-black-950 placeholder:text-black-950/35 transition focus-ring disabled:cursor-not-allowed disabled:opacity-60";
-const normalBorder = "border-white/10 focus:border-gold-400";
+  "w-full rounded-xl border bg-[#0c0d12] px-3 text-sm text-[#F5EFE6] placeholder:text-[#9CA3AF]/40 transition focus:outline-none focus:ring-1 focus:ring-[#d4af37] disabled:cursor-not-allowed disabled:opacity-60";
+const normalBorder = "border-[#d4af37]/25 focus:border-[#d4af37]";
 const invalidBorder = "border-red-500/40 focus:border-red-500";
 
 export interface FieldProps {
@@ -35,18 +35,18 @@ export function Field({
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && (
-        <label htmlFor={htmlFor} className="block text-xs font-bold text-black-950/75">
+        <label htmlFor={htmlFor} className="block text-xs font-bold text-[#F5EFE6]/80">
           {label}
-          {required && <span className="text-red-500"> *</span>}
+          {required && <span className="text-red-400"> *</span>}
         </label>
       )}
       {children}
       {error ? (
-        <p className="text-xs font-medium text-red-300" role="alert">
+        <p className="text-xs font-medium text-red-400" role="alert">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-black-950/50">{hint}</p>
+        <p className="text-xs text-[#9CA3AF]/60">{hint}</p>
       ) : null}
     </div>
   );
@@ -81,7 +81,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         aria-invalid={invalid || ariaInvalid || undefined}
         className={cn(
           controlBase,
-          "h-11 appearance-none pl-9",
+          "h-11 appearance-none pl-9 pr-3 cursor-pointer bg-[#0c0d12] text-[#ffffff] [&>option]:bg-[#0c0d12] [&>option]:text-[#ffffff] [&>optgroup]:bg-[#0c0d12] [&>optgroup]:text-[#d4af37]",
           invalid ? invalidBorder : normalBorder,
           className
         )}
@@ -90,7 +90,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {children}
       </select>
       <ChevronDown
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black-950/40"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#d4af37]"
         aria-hidden="true"
       />
     </div>

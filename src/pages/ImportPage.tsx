@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { Download, FileSpreadsheet, RefreshCw, Upload, Users, Sparkles, CheckCircle2 } from "lucide-react";
 import {
   MAX_IMPORT_FILE_SIZE,
@@ -17,13 +17,13 @@ import type {
   ImportPreview,
   ParsedCustomerFile,
 } from "@/lib/importer";
-import { fetchExistingPhones, useImportCustomers } from "@/hooks/useCustomers";
+import { fetchExistingCustomerKeys, useImportCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
 import { Field, Select } from "@/components/ui/Field";
 import { Badge, Card, EmptyState, Skeleton, StatCard } from "@/components/ui/Misc";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, cn } from "@/lib/utils";
 import { foodicsIntegration } from "@/lib/integrations/foodics";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { CustomerInput } from "@/types/crm";
@@ -37,6 +37,7 @@ export function ImportPage() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { mutateAsync: importCustomers, isPending: importPending } = useImportCustomers();
   const { pushToast } = useToast();
@@ -48,16 +49,14 @@ export function ImportPage() {
     setPreview(null);
     setError(null);
     setIsParsing(false);
+    setIsDragging(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     setError(null);
     setParsed(null);
     setPreview(null);
@@ -79,6 +78,35 @@ export function ImportPage() {
     }
   };
 
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
   const handleMappingChange = (fieldKey: keyof ImportMapping, value: string) => {
     setMapping((current) => ({ ...current, [fieldKey]: value }));
   };
@@ -90,8 +118,8 @@ export function ImportPage() {
 
     try {
       const rows = buildImportRows(parsed, mapping);
-      const existingPhones = await fetchExistingPhones();
-      setPreview(buildImportPreview(rows, existingPhones));
+      const existing = await fetchExistingCustomerKeys();
+      setPreview(buildImportPreview(rows, existing.phones, existing.names));
       setStep(3);
     } catch (previewError) {
       setError(
@@ -125,7 +153,13 @@ export function ImportPage() {
       const result = await importCustomers(input);
       pushToast({
         title: t("تم استيراد البيانات بنجاح! 🚀", "Data Imported Successfully! 🚀"),
-        description: t(`تمت إضافة ${formatNumber(result.inserted)} عميل جديد.`, `Added ${formatNumber(result.inserted)} new guests.`),
+        description:
+          result.skipped > 0
+            ? t(
+                `تمت إضافة ${formatNumber(result.inserted)} عميل جديد، وتخطي ${formatNumber(result.skipped)} عميل مكرر (بالاسم أو الهاتف).`,
+                `Added ${formatNumber(result.inserted)} new guests, skipped ${formatNumber(result.skipped)} duplicates.`
+              )
+            : t(`تمت إضافة ${formatNumber(result.inserted)} عميل جديد.`, `Added ${formatNumber(result.inserted)} new guests.`),
         variant: "success",
       });
       reset();
@@ -216,13 +250,31 @@ export function ImportPage() {
 
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#d4af37]/30 bg-[#0d0f11] hover:border-[#d4af37] hover:bg-[#131618] px-6 py-12 text-center cursor-pointer transition-all duration-300"
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed px-6 py-12 text-center cursor-pointer transition-all duration-300 select-none",
+              isDragging
+                ? "border-[#d4af37] bg-[#d4af37]/15 scale-[1.01] shadow-2xl shadow-[#d4af37]/20"
+                : "border-[#d4af37]/30 bg-[#0d0f11] hover:border-[#d4af37] hover:bg-[#131618]"
+            )}
           >
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#d4af37]/15 border border-[#d4af37]/30 text-[#f5d36e] mb-4">
+            <span
+              className={cn(
+                "flex h-16 w-16 items-center justify-center rounded-2xl border transition-all duration-300 mb-4",
+                isDragging
+                  ? "bg-[#d4af37] text-black border-[#d4af37] scale-110 animate-bounce"
+                  : "bg-[#d4af37]/15 border-[#d4af37]/30 text-[#f5d36e]"
+              )}
+            >
               <Upload className="h-7 w-7" aria-hidden="true" />
             </span>
             <h2 className="text-lg font-black text-[#F5EFE6]">
-              {t("اضغط هنا لاختيار ملف إكسيل أو CSV", "Click here to choose Excel or CSV file")}
+              {isDragging
+                ? t("أفلت ملف الإكسيل هنا الآن! 📥", "Drop Excel file here now! 📥")
+                : t("اضغط هنا أو اسحب الملف (Drag & Drop) لاختيار ملف إكسيل أو CSV", "Click or Drag & Drop Excel or CSV file")}
             </h2>
             <p className="mt-2 text-xs text-[#9CA3AF]">
               CSV, XLSX, XLS • {t(`حتى ${formatNumber(MAX_IMPORT_ROWS)} صف لكل ملف`, `Up to ${formatNumber(MAX_IMPORT_ROWS)} rows per file`)}

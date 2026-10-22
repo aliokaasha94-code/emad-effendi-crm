@@ -6,6 +6,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { isValidEgyptianMobile, normalizePhone } from "@/lib/phone";
+import { normalizeNameForMatch } from "@/lib/importer";
 import { requireSupabase } from "@/lib/supabase";
 import type {
   Customer,
@@ -196,6 +197,21 @@ export function useCustomerMutations() {
   const createCustomer = useMutation({
     mutationFn: async (input: CustomerInput): Promise<Customer> => {
       const client = requireSupabase();
+
+      // Check duplicate name before creating
+      const trimmedName = input.full_name.trim();
+      if (trimmedName) {
+        const { data: existingName } = await client
+          .from("customers")
+          .select("id, full_name")
+          .ilike("full_name", trimmedName)
+          .maybeSingle();
+
+        if (existingName) {
+          throw new Error("اسم العميل مسجل بالفعل في النظام. يرجى استخدام اسم مميز أو إضافة كنية لتجنب التكرار.");
+        }
+      }
+
       const { data, error } = await client
         .from("customers")
         .insert(normalizeCustomerInput(input))
@@ -220,6 +236,22 @@ export function useCustomerMutations() {
       input,
     }: UpdateCustomerVariables): Promise<Customer> => {
       const client = requireSupabase();
+
+      // Check duplicate name before updating
+      const trimmedName = input.full_name?.trim();
+      if (trimmedName) {
+        const { data: existingName } = await client
+          .from("customers")
+          .select("id, full_name")
+          .ilike("full_name", trimmedName)
+          .neq("id", id)
+          .maybeSingle();
+
+        if (existingName) {
+          throw new Error("اسم العميل مسجل بالفعل لعميل آخر في النظام.");
+        }
+      }
+
       const { data, error } = await client
         .from("customers")
         .update(normalizeCustomerInput(input))
@@ -286,16 +318,22 @@ export function usePhoneConflict(
   });
 }
 
-export async function fetchExistingPhones(): Promise<Set<string>> {
+export interface ExistingCustomerKeys {
+  phones: Set<string>;
+  names: Set<string>;
+}
+
+export async function fetchExistingCustomerKeys(): Promise<ExistingCustomerKeys> {
   const client = requireSupabase();
   const phones = new Set<string>();
+  const names = new Set<string>();
   const pageSize = 1000;
   let from = 0;
 
   for (;;) {
     const { data, error } = await client
       .from("customers")
-      .select("phone_number")
+      .select("phone_number, full_name")
       .order("id", { ascending: true })
       .range(from, from + pageSize - 1);
 
@@ -303,11 +341,14 @@ export async function fetchExistingPhones(): Promise<Set<string>> {
       throw new Error(CUSTOMERS_ERROR);
     }
 
-    const rows = (data ?? []) as { phone_number: string }[];
+    const rows = (data ?? []) as { phone_number: string; full_name: string }[];
     for (const row of rows) {
       const normalized = normalizePhone(row.phone_number);
       if (normalized) {
         phones.add(normalized);
+      }
+      if (row.full_name) {
+        names.add(normalizeNameForMatch(row.full_name));
       }
     }
 
@@ -318,27 +359,48 @@ export async function fetchExistingPhones(): Promise<Set<string>> {
     from += pageSize;
   }
 
-  return phones;
+  return { phones, names };
+}
+
+export async function fetchExistingPhones(): Promise<Set<string>> {
+  const keys = await fetchExistingCustomerKeys();
+  return keys.phones;
 }
 
 export function useImportCustomers() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (rows: CustomerInput[]): Promise<{ inserted: number }> => {
+    mutationFn: async (rows: CustomerInput[]): Promise<{ inserted: number; skipped: number }> => {
       const client = requireSupabase();
-      const seen = new Set<string>();
+      const existing = await fetchExistingCustomerKeys();
+      const seenPhones = new Set<string>();
+      const seenNames = new Set<string>();
       const payload: CustomerPayload[] = [];
+      let skipped = 0;
 
       for (const row of rows) {
         const entry = normalizeCustomerInput(row);
         if (!entry.full_name || !isValidEgyptianMobile(entry.phone_number)) {
           continue;
         }
-        if (seen.has(entry.phone_number)) {
+
+        const normName = normalizeNameForMatch(entry.full_name);
+
+        // Reject if phone already exists in DB or current batch
+        if (existing.phones.has(entry.phone_number) || seenPhones.has(entry.phone_number)) {
+          skipped++;
           continue;
         }
-        seen.add(entry.phone_number);
+
+        // Reject if customer name already exists in DB or current batch
+        if (existing.names.has(normName) || seenNames.has(normName)) {
+          skipped++;
+          continue;
+        }
+
+        seenPhones.add(entry.phone_number);
+        seenNames.add(normName);
         payload.push(entry);
       }
 
@@ -361,7 +423,7 @@ export function useImportCustomers() {
         inserted += (data ?? []).length;
       }
 
-      return { inserted };
+      return { inserted, skipped };
     },
     onSuccess: () => invalidateCustomerQueries(queryClient),
   });

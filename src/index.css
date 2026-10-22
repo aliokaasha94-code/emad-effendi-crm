@@ -52,6 +52,24 @@
     -moz-appearance: textfield;
   }
 
+  /* Native Select & Option styling */
+  select {
+    background-color: #0c0d12 !important;
+    color: #ffffff !important;
+  }
+
+  select option,
+  select optgroup {
+    background-color: #0c0d12 !important;
+    color: #ffffff !important;
+    padding: 8px 12px;
+  }
+
+  select option:checked {
+    background-color: #1e222b !important;
+    color: #f5d36e !important;
+  }
+
   /* Emad Afandi Luxury Gold Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;

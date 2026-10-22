@@ -106,6 +106,20 @@ export function CustomersPage() {
     ? t("رقم الهاتف مسجل بالفعل لعميل آخر.", "Phone number already registered to another customer.")
     : null;
 
+  const handlePageChange = (newPage: number) => {
+    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    setPage(newPage);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
+    });
+    setTimeout(() => {
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
+    }, 20);
+    setTimeout(() => {
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
+    }, 80);
+  };
+
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, filterSegment, sort]);
@@ -308,6 +322,36 @@ export function CustomersPage() {
         </Card>
       ) : (
         <>
+          {/* Top Pagination Bar */}
+          <div className="flex items-center justify-between px-1 text-xs text-[#9CA3AF]">
+            <p>
+              {t(`صفحة ${page} من ${totalPages}`, `Page ${page} of ${totalPages}`)} • {pluralizeCustomers(total)}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
+                className="h-8 px-3 text-xs"
+              >
+                {t("السابق", "Previous")}
+              </Button>
+              <span className="font-extrabold text-[#f5d36e] px-1">{page} / {totalPages}</span>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => handlePageChange(page + 1)}
+                className="h-8 px-3 text-xs"
+              >
+                {t("التالي", "Next")}
+              </Button>
+            </div>
+          </div>
+
           <Card className="surface-glass overflow-hidden hidden md:block border border-[#d4af37]/15 p-0">
             <table className="w-full text-start">
               <thead className="bg-[#0d0f11] text-xs font-bold text-[#c8a34b] border-b border-[#d4af37]/20">
@@ -478,16 +522,17 @@ export function CustomersPage() {
                 variant="secondary"
                 size="sm"
                 disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
               >
                 {t("السابق", "Previous")}
               </Button>
+              <span className="font-extrabold text-[#f5d36e] px-1 text-xs">{page} / {totalPages}</span>
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 disabled={page >= totalPages}
-                onClick={() => setPage((current) => current + 1)}
+                onClick={() => handlePageChange(page + 1)}
               >
                 {t("التالي", "Next")}
               </Button>

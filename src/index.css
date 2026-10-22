@@ -9,21 +9,31 @@
   }
 
   body {
-    @apply antialiased;
-    background-color: #0a0a0a;
-    color: #e6e6e6;
+    @apply antialiased font-sans;
+    background-color: #060709;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+      radial-gradient(rgba(212, 175, 55, 0.12) 1px, transparent 1px),
+      radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 32px 32px, 16px 16px;
+    background-position: 0 0, 0 0, 8px 8px;
+    background-attachment: fixed;
+    color: #F5EFE6;
+    overflow-x: hidden;
   }
 
   [dir="rtl"] body {
     text-align: right;
+    font-family: 'Noto Kufi Arabic', system-ui, sans-serif;
   }
   [dir="ltr"] body {
     text-align: left;
+    font-family: 'Outfit', 'Noto Kufi Arabic', system-ui, sans-serif;
   }
 
   ::selection {
-    background-color: #f2ae2e;
-    color: #0f0f0f;
+    background-color: rgba(212, 175, 55, 0.35);
+    color: #f5d36e;
   }
 
   input[type='number']::-webkit-outer-spin-button,
@@ -36,68 +46,108 @@
     -moz-appearance: textfield;
   }
 
+  /* Emad Afandi Luxury Gold Scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: #060709;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #f2ae2e;
+    background: #96741b;
     border-radius: 999px;
-    border: 2px solid #0a0a0a;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #d8bc97;
+    background: #d4af37;
   }
 }
 
 @layer components {
+  /* Emad Afandi Luxury 3D Cards */
   .surface {
-    @apply rounded-3xl bg-surface-50 shadow-card;
-    border: 1px solid #262626;
+    @apply rounded-2xl transition-all duration-300;
+    background: linear-gradient(145deg, #15181b 0%, #0d0f11 100%);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(212, 175, 55, 0.08);
+  }
+
+  .surface:hover {
+    border-color: rgba(212, 175, 55, 0.38);
+    box-shadow: 0 14px 35px -4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(212, 175, 55, 0.12);
   }
 
   .surface-glass {
-    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-card;
+    @apply rounded-2xl backdrop-blur-md transition-all duration-300;
+    background: linear-gradient(145deg, rgba(21, 24, 27, 0.94) 0%, rgba(13, 15, 17, 0.94) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.85);
   }
 
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/70 focus-visible:ring-offset-2;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-black;
   }
 
+  /* Luxury Buttons */
   .btn-primary {
-    @apply rounded-full bg-gold-400 px-6 py-3 font-bold text-sm tracking-wider transition-all hover:scale-105 hover:shadow-gold active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
-    color: #0f0f0f;
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold tracking-wide transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #f5d36e 0%, #d4af37 100%);
+    color: #000000;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fceda2 0%, #f5d36e 100%);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45);
+    transform: translateY(-1px);
   }
 
   .btn-secondary {
-    @apply rounded-full border border-white/20 bg-white/5 px-6 py-3 font-bold text-sm tracking-wider transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-gold-400 disabled:opacity-50 disabled:cursor-not-allowed;
-    color: #0f0f0f;
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: #15181b;
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    color: #F5EFE6;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: #1c2024;
+    border-color: #d4af37;
+    color: #f5d36e;
+    transform: translateY(-1px);
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold;
-    color: rgba(230, 230, 230, 0.7);
+    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    color: #f5d36e;
   }
 
   .glass-card {
-    @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md shadow-card p-5;
+    @apply rounded-2xl p-5 backdrop-blur-md transition-all duration-300;
+    background: linear-gradient(145deg, rgba(21, 24, 27, 0.95) 0%, rgba(13, 15, 17, 0.95) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
   }
 
   .input-field {
-    @apply rounded-xl border border-white/20 px-3 py-3 text-sm transition focus:ring-2 focus:ring-gold-400/50 focus:border-gold-400 disabled:bg-white/5 disabled:cursor-not-allowed;
-    background-color: rgba(15, 15, 15, 0.4);
-    color: #e6e6e6;
+    @apply rounded-xl px-3.5 py-2.5 text-sm transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold disabled:opacity-50;
+    background-color: #0b0d0e;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #F5EFE6;
+  }
+
+  .input-field:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
   }
 
   .label-text {
-    @apply block text-xs font-bold mb-1.5 tracking-wider uppercase;
-    color: rgba(230, 230, 230, 0.6);
+    @apply block text-xs font-bold mb-1.5 tracking-wider;
+    color: #c8a34b;
   }
 }
 
@@ -110,14 +160,15 @@
     scrollbar-width: none;
   }
 
-  .text-gradient {
-    background: linear-gradient(135deg, #f2ae2e 0%, #d8bc97 100%);
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #f5d36e 0%, #d4af37 60%, #96741b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .text-shadow {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  .gold-border-glow {
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
   }
 }

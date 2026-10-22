@@ -8,6 +8,8 @@ import {
   Star,
   TrendingUp,
   Users,
+  ArrowUpRight,
+  Sparkles,
 } from "lucide-react";
 import {
   Area,
@@ -21,10 +23,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useCustomers } from "@/hooks/useCustomers";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { SmartTriggersWidget } from "@/components/dashboard/SmartTriggersWidget";
 import {
   Avatar,
   Badge,
@@ -44,7 +49,6 @@ import {
   pluralizeCustomers,
 } from "@/lib/utils";
 import { SEGMENT_ORDER, SOURCE_LABELS, getSegmentMeta } from "@/lib/segments";
-import type { CustomerSegment } from "@/types/crm";
 
 const cnDotClass = (dotClass: string) => `h-2 w-2 rounded-full ${dotClass}`;
 
@@ -52,11 +56,18 @@ export function DashboardPage() {
   const { session } = useAuth();
   const { t } = useLanguage();
   const { data: overview, isLoading, isError, refetch } = useDashboard();
+  const { data: customersData } = useCustomers({
+    search: "",
+    segment: "ALL",
+    sort: "recent",
+    page: 1,
+    pageSize: 100,
+  });
 
   const userName =
     session?.user?.user_metadata?.full_name ??
     session?.user?.email?.split("@")[0] ??
-    (t("مستخدم", "User"));
+    t("كاشير عماد أفندي", "Emad Afandi Staff");
 
   const chartData =
     overview?.daily_revenue.map((item) => ({
@@ -92,13 +103,13 @@ export function DashboardPage() {
 
   if (isError || !overview) {
     return (
-      <Card className="surface-glass p-6">
+      <Card className="surface-glass p-6 text-center">
         <EmptyState
           icon={Activity}
           title={t("تعذر تحميل لوحة التحكم", "Failed to load dashboard")}
           description={t("حدث خطأ أثناء جلب البيانات. حاول مرة أخرى.", "An error occurred while loading data. Please try again.")}
           action={
-            <Button type="button" onClick={() => void refetch()}>
+            <Button type="button" onClick={() => void refetch()} variant="primary">
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               {t("إعادة المحاولة", "Retry")}
             </Button>
@@ -109,17 +120,37 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Page Header */}
       <PageHeader
-        eyebrow={{ ar: "لوحة التحكم", en: "Dashboard" }}
-        title={{ ar: `${greeting()}، ${userName}`, en: `${greeting()}, ${userName}` }}
-        description={{
-          ar: "نظرة سريعة على عملائك، مبيعاتك، وولائهم.",
-          en: "Quick overview of your customers, sales, and loyalty.",
+        eyebrow={{ ar: "كافيه ومحمصة عماد أفندي", en: "Emad Afandi Cafe & Roastery" }}
+        title={{
+          ar: `${greeting()}، ${userName} 👋`,
+          en: `${greeting()}, ${userName} 👋`,
         }}
+        description={{
+          ar: "تحليلات فورية لقاعدة العملاء، سلوك الشراء، والمبيعات اليومية.",
+          en: "Real-time analytics for your customer base, purchasing behavior, and revenue.",
+        }}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link to="/cashier">
+              <Button variant="primary" size="sm">
+                <Coins className="h-4 w-4" />
+                <span>{t("تسجيل طلب سريع", "Quick Order")}</span>
+              </Button>
+            </Link>
+          </div>
+        }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* KPI Cards Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
         <StatCard
           label={t("إجمالي العملاء", "Total Customers")}
           value={overview.total_customers}
@@ -128,35 +159,35 @@ export function DashboardPage() {
           tone="neutral"
         />
         <StatCard
-          label={t("العملاء النشطون", "Active Customers")}
+          label={t("العملاء النشطون (VIP والدائمين)", "Active VIP & Regulars")}
           value={overview.active_customers}
-          hint={t("VIP أو عميل دائم", "VIP or Loyal")}
+          hint={t("يشكلون أعلى نسبة مبيعات", "Driving core repeat visits")}
           icon={Star}
           tone="gold"
         />
         <StatCard
-          label={t("عملاء معرضون للفقدان", "At Risk Customers")}
+          label={t("عملاء على وشك الفقدان", "At-Risk Customers")}
           value={overview.at_risk}
-          hint={t("يحتاجون حملة متابعة", "Need follow-up campaign")}
+          hint={t("يحتاجون إرسال رسالة واتساب", "Ready for WhatsApp campaign")}
           icon={Heart}
           tone="danger"
         />
         <StatCard
-          label={t("مبيعات الشهر", "Monthly Revenue")}
+          label={t("مبيعات هذا الشهر", "Monthly Revenue")}
           value={formatCurrency(overview.month_revenue)}
-          hint={`${formatNumber(overview.month_transactions)} ${t("عملية", "orders")}`}
+          hint={`${formatNumber(overview.month_transactions)} ${t("طلب مسجل", "completed orders")}`}
           icon={TrendingUp}
           tone="success"
         />
         <StatCard
-          label={t("إجمالي النقاط", "Total Loyalty Points")}
+          label={t("نقاط الولاء المجمعة", "Total Loyalty Points")}
           value={overview.total_points}
-          hint={t("نقاط الولاء الحالية", "Current loyalty points")}
+          hint={t("رصيد نقاط عملاء الكافيه", "Active customer balance")}
           icon={Coins}
           tone="gold"
         />
         <StatCard
-          label={t("متوسط قيمة العملية", "Avg Order Value")}
+          label={t("متوسط قيمة الطلب (AOV)", "Avg Order Value")}
           value={
             formatCurrency(
               overview.month_transactions > 0
@@ -164,24 +195,32 @@ export function DashboardPage() {
                 : 0,
             )
           }
-          hint={t("هذا الشهر", "This month")}
+          hint={t("خلال الشهر الحالي", "During current month")}
           icon={Activity}
           tone="neutral"
         />
-      </div>
+      </motion.div>
 
+      {/* Smart Retention & Birthday Triggers */}
+      <SmartTriggersWidget customers={customersData?.customers ?? []} />
+
+      {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-5">
+        {/* Revenue Area Chart */}
         <Card className="surface-glass p-5 lg:col-span-3">
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-extrabold text-black-50">
-                {t("مبيعات آخر 30 يوماً", "Sales Last 30 Days")}
-              </h2>
-              <p className="mt-1 text-xs text-black-50/55">
-                {t("الإيراد اليومي بالكامل", "Full daily revenue")}
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-extrabold text-[#F5EFE6]">
+                  {t("مبيعات آخر 30 يوماً", "Sales Last 30 Days")}
+                </h2>
+                <Sparkles className="h-3.5 w-3.5 text-[#d4af37]" />
+              </div>
+              <p className="mt-1 text-xs text-[#9CA3AF]">
+                {t("الإيراد اليومي المباشر بالجنيه المصري", "Daily revenue trend in EGP")}
               </p>
             </div>
-            <Badge variant="gold">{t("شهري", "Monthly")}</Badge>
+            <Badge variant="gold">{t("آخر 30 يوم", "30 Days")}</Badge>
           </div>
 
           {chartData.length === 0 ? (
@@ -191,36 +230,47 @@ export function DashboardPage() {
               description={t("ستظهر بيانات المبيعات هنا بعد تسجيل العمليات.", "Sales data will appear here after recording transactions.")}
             />
           ) : (
-            <div dir="ltr" className="h-72">
+            <div dir="ltr" className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f2ae2e" stopOpacity={0.45} />
-                      <stop offset="100%" stopColor="#f2ae2e" stopOpacity={0.05} />
+                    <linearGradient id="goldRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#d4af37" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#d4af37" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#ffffff" strokeOpacity={0.08} strokeDasharray="4 4" />
+                  <CartesianGrid stroke="#d4af37" strokeOpacity={0.08} strokeDasharray="3 3" />
                   <XAxis
                     dataKey="label"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "#e6e6e6", opacity: 0.6 }}
+                    tick={{ fontSize: 11, fill: "#9CA3AF" }}
                   />
                   <YAxis
                     tickLine={false}
                     axisLine={false}
-                    width={48}
+                    width={50}
                     tickFormatter={(value) => formatNumber(Number(value))}
-                    tick={{ fontSize: 11, fill: "#e6e6e6", opacity: 0.6 }}
+                    tick={{ fontSize: 11, fill: "#9CA3AF" }}
                   />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#131618",
+                      borderColor: "rgba(212, 175, 55, 0.4)",
+                      borderRadius: "12px",
+                      color: "#F5EFE6",
+                      boxShadow: "0 8px 30px rgba(0,0,0,0.8)",
+                      fontSize: "12px",
+                    }}
+                    labelStyle={{ color: "#f5d36e", fontWeight: "bold" }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#c97512"
-                    strokeWidth={3}
-                    fill="url(#revenueGradient)"
+                    name={t("الإيراد (ج.م)", "Revenue (EGP)")}
+                    stroke="#d4af37"
+                    strokeWidth={2.5}
+                    fill="url(#goldRevenueGradient)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -228,17 +278,18 @@ export function DashboardPage() {
           )}
         </Card>
 
+        {/* Customer Segmentation Distribution */}
         <Card className="surface-glass p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-extrabold text-black-50">
-                {t("توزيع الشرائح", "Segment Distribution")}
+              <h2 className="text-base font-extrabold text-[#F5EFE6]">
+                {t("توزيع شرائح العملاء (RFM)", "RFM Segments")}
               </h2>
-              <p className="mt-1 text-xs text-black-50/55">
+              <p className="mt-1 text-xs text-[#9CA3AF]">
                 {pluralizeCustomers(overview.total_customers)}
               </p>
             </div>
-            <Badge variant="brand">{t("الكل", "All")}</Badge>
+            <Badge variant="brand">{t("التصنيف الذكي", "Smart RFM")}</Badge>
           </div>
 
           {totalPie === 0 ? (
@@ -248,37 +299,53 @@ export function DashboardPage() {
               description={t("أضف عملاء لعرض التوزيع.", "Add customers to see distribution.")}
             />
           ) : (
-            <div dir="ltr" className="h-72">
+            <div dir="ltr" className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     dataKey="count"
                     nameKey="label"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={2}
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
                   >
                     {pieData.map((item) => (
-                      <Cell key={item.segment} fill={getSegmentMeta(item.segment).color} />
+                      <Cell
+                        key={item.segment}
+                        fill={getSegmentMeta(item.segment).color}
+                        stroke="#131618"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#131618",
+                      borderColor: "rgba(212, 175, 55, 0.4)",
+                      borderRadius: "12px",
+                      color: "#F5EFE6",
+                      fontSize: "12px",
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto no-scrollbar">
             {pieData.map((item) => {
               const meta = getSegmentMeta(item.segment);
               return (
-                <div key={item.segment} className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-xs font-bold text-black-50/75">
+                <div
+                  key={item.segment}
+                  className="flex items-center justify-between gap-3 p-1.5 rounded-lg hover:bg-white/5 transition"
+                >
+                  <span className="flex items-center gap-2 text-xs font-bold text-[#F5EFE6]/80">
                     <span className={cnDotClass(meta.dotClass)} aria-hidden="true" />
                     {item.label}
                   </span>
-                  <span className="text-xs font-extrabold text-black-50">
+                  <span className="text-xs font-extrabold text-[#f5d36e]">
                     {formatNumber(item.count)}
                   </span>
                 </div>
@@ -288,48 +355,64 @@ export function DashboardPage() {
         </Card>
       </div>
 
+      {/* Top Customers & Recent Transactions */}
       <div className="grid gap-6 lg:grid-cols-5">
+        {/* Top VIP Customers */}
         <Card className="surface-glass p-5 lg:col-span-3">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold text-black-50">
-              {t("أفضل العملاء", "Top Customers")}
-            </h2>
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-[#d4af37]" />
+              <h2 className="text-base font-extrabold text-[#F5EFE6]">
+                {t("أفضل عملاء عماد أفندي", "Top Emad Afandi Customers")}
+              </h2>
+            </div>
             <Link
               to="/customers"
-              className="text-xs font-bold text-gold-700 transition hover:text-gold-800 focus-ring"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#f5d36e] transition hover:text-[#d4af37]"
             >
-              {t("عرض الكل", "View All")}
+              <span>{t("عرض كل العملاء", "View All")}</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
           {overview.top_customers.length === 0 ? (
             <EmptyState
               icon={Crown}
-              title={t("لا يوجد عملاء مميزون بعد", "No top customers yet")}
-              description={t("أفضل العملاء سيظهرون هنا تلقائياً.", "Top customers will appear here automatically.")}
+              title={t("لا يوجد عملاء بعد", "No customers yet")}
+              description={t("أفضل العملاء سيظهرون هنا تلقائياً بعد تسجيل الطلبات.", "Top customers will appear here automatically.")}
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {overview.top_customers.map((customer, index) => (
                 <Link
                   key={customer.id}
                   to={`/customers?customer=${customer.id}`}
-                  className="flex items-center gap-3 rounded-card border border-white/10 bg-white/5 p-3 transition hover:border-gold-300 hover:bg-white focus-ring"
+                  className="group flex items-center gap-3 rounded-xl border border-white/5 bg-[#0d0f11] p-3 transition-all duration-200 hover:border-[#d4af37]/40 hover:bg-[#1a1d1f]"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gold-100 text-xs font-extrabold text-gold-800">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                      index === 0
+                        ? "bg-gradient-to-r from-[#d4af37] to-[#f5d36e] text-black shadow-md shadow-[#d4af37]/20"
+                        : index === 1
+                        ? "bg-slate-300 text-black"
+                        : index === 2
+                        ? "bg-amber-700/80 text-white"
+                        : "bg-white/10 text-[#9CA3AF]"
+                    }`}
+                  >
                     {index + 1}
                   </span>
                   <Avatar name={customer.full_name} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-black-50">
+                    <p className="truncate text-sm font-bold text-[#F5EFE6] group-hover:text-[#f5d36e] transition">
                       {customer.full_name}
                     </p>
-                    <p className="text-xs text-black-50/55">
-                      {formatNumber(customer.orders_count)} {t("عملية", "orders")}
+                    <p className="text-[11px] text-[#9CA3AF]">
+                      {formatNumber(customer.orders_count)} {t("طلب", "orders")}
                     </p>
                   </div>
                   <SegmentBadge segment={customer.segment} />
-                  <span className="text-sm font-extrabold text-black-50">
+                  <span className="text-xs font-black text-[#f5d36e]">
                     {formatCurrency(customer.total_spent)}
                   </span>
                 </Link>
@@ -338,16 +421,18 @@ export function DashboardPage() {
           )}
         </Card>
 
+        {/* Recent Transactions */}
         <Card className="surface-glass p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold text-black-50">
+            <h2 className="text-base font-extrabold text-[#F5EFE6]">
               {t("آخر العمليات", "Recent Transactions")}
             </h2>
             <Link
               to="/cashier"
-              className="text-xs font-bold text-gold-700 transition hover:text-gold-800 focus-ring"
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#f5d36e] transition hover:text-[#d4af37]"
             >
-              {t("الكاشير", "Cashier")}
+              <span>{t("الكاشير", "Cashier")}</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
@@ -358,24 +443,24 @@ export function DashboardPage() {
               description={t("سجل أول عملية من صفحة الكاشير.", "Record your first transaction from the Cashier page.")}
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {overview.recent_transactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center gap-3 rounded-card border border-white/10 bg-white/5 p-3"
+                  className="flex items-center gap-3 rounded-xl border border-white/5 bg-[#0d0f11] p-3 hover:border-white/10 transition"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-black-200 text-black-50">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/25 text-[#f5d36e]">
                     <Coins className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-black-50">
-                      {transaction.customer_name ?? "عميل"}
+                    <p className="truncate text-xs font-bold text-[#F5EFE6]">
+                      {transaction.customer_name ?? t("عميل كافيه", "Walk-in Guest")}
                     </p>
-                    <p className="text-xs text-black-50/55">
+                    <p className="text-[10px] text-[#9CA3AF]">
                       {SOURCE_LABELS[transaction.source]} • {formatDateTime(transaction.created_at)}
                     </p>
                   </div>
-                  <span className="text-sm font-extrabold text-black-50">
+                  <span className="text-xs font-black text-[#F5EFE6]">
                     {formatCurrency(transaction.amount)}
                   </span>
                 </div>

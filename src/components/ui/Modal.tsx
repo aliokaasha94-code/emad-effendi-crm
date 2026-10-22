@@ -115,7 +115,7 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-brand-950/50 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-0 backdrop-blur-md animate-fade-in sm:items-center sm:p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -128,7 +128,7 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          "relative flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-t-3xl bg-white p-6 shadow-float animate-slide-up focus:outline-none sm:rounded-3xl",
+          "relative flex max-h-[90vh] w-full flex-col overflow-y-auto rounded-t-3xl border border-[#d4af37]/25 bg-[#131618] p-6 shadow-2xl animate-slide-up focus:outline-none sm:rounded-3xl no-scrollbar",
           sizeClasses[size],
           className
         )}
@@ -136,23 +136,23 @@ export function Modal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-brand-950/60 transition hover:bg-brand-950/5 hover:text-brand-950 focus-ring"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-[#9CA3AF] transition hover:bg-white/10 hover:text-[#f5d36e]"
           aria-label="إغلاق"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
 
         {(title || description) && (
-          <div className="mb-5 pl-10">
+          <div className="mb-6 pl-10 border-b border-white/5 pb-4">
             {title && (
-              <h2 id={titleId} className="text-lg font-extrabold text-brand-950">
+              <h2 id={titleId} className="text-lg font-black text-[#F5EFE6]">
                 {title}
               </h2>
             )}
             {description && (
               <p
                 id={descriptionId}
-                className={cn("text-sm leading-6 text-brand-950/60", title && "mt-1")}
+                className={cn("text-xs leading-relaxed text-[#9CA3AF]", title && "mt-1.5")}
               >
                 {description}
               </p>
@@ -162,7 +162,7 @@ export function Modal({
 
         {children}
 
-        {footer && <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div>}
+        {footer && <div className="mt-6 flex flex-wrap justify-end gap-2.5 border-t border-white/5 pt-4">{footer}</div>}
       </div>
     </div>,
     document.body
@@ -202,14 +202,14 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            {cancelLabel}
+            <span>{cancelLabel}</span>
           </Button>
           <Button
             variant={variant === "primary" ? "primary" : "danger"}
             onClick={onConfirm}
             loading={loading}
           >
-            {confirmLabel}
+            <span>{confirmLabel}</span>
           </Button>
         </>
       }

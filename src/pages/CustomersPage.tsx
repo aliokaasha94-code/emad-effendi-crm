@@ -10,6 +10,7 @@ import {
   Trash2,
   Upload,
   Users,
+  QrCode,
 } from "lucide-react";
 import {
   CUSTOMERS_PAGE_SIZE,
@@ -33,8 +34,9 @@ import {
   StatCard,
 } from "@/components/ui/Misc";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { CustomerFormModal } from "@/components/customer-form-modal";
-import { CustomerDetailModal } from "@/components/customer-detail-modal";
+import { CustomerFormModal } from "@/components/customers/customer-form-modal";
+import { CustomerDetailModal } from "@/components/customers/customer-detail-modal";
+import { CustomerPassModal } from "@/components/customers/CustomerPassModal";
 import { isValidEgyptianMobile } from "@/lib/phone";
 import { openWhatsApp, personalizeMessage } from "@/lib/whatsapp";
 import { SEGMENT_ORDER, SOURCE_LABELS, getSegmentMeta } from "@/lib/segments";
@@ -97,6 +99,7 @@ export function CustomersPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const [passCustomer, setPassCustomer] = useState<Customer | null>(null);
 
   const { data: phoneConflict } = usePhoneConflict(phone, editing?.id ?? null);
   const phoneError = phoneConflict
@@ -217,40 +220,40 @@ export function CustomersPage() {
           en: "Search, add, and edit customer data from one place.",
         }}
         actions={
-          <>
+          <div className="flex items-center gap-2.5">
             <Link
               to="/import"
-              className="inline-flex h-11 items-center gap-2 rounded-card border border-brand-950/10 bg-white/5 px-4 text-sm font-bold text-brand-950 transition hover:bg-gold-50 focus-ring"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#d4af37]/25 bg-[#1a1d1f] px-4 text-xs font-bold text-[#F5EFE6] transition-all hover:bg-[#22262a] hover:border-[#d4af37] hover:text-[#f5d36e]"
             >
-              <Upload className="h-4 w-4" aria-hidden="true" />
-              {t("استيراد", "Import")}
+              <Upload className="h-4 w-4 text-[#d4af37]" aria-hidden="true" />
+              <span>{t("استيراد بيانات", "Import Data")}</span>
             </Link>
-            <Button type="button" onClick={openCreate}>
+            <Button type="button" onClick={openCreate} variant="primary">
               <Plus className="h-4 w-4" aria-hidden="true" />
-              {t("إضافة عميل", "Add Customer")}
+              <span>{t("إضافة عميل", "Add Customer")}</span>
             </Button>
-          </>
+          </div>
         }
       />
 
-      <Card className="surface p-4">
+      <Card className="surface-glass p-4 border border-[#d4af37]/15">
         <div className="grid gap-3 md:grid-cols-4">
           <div className="relative md:col-span-2">
             <Input
               type="search"
-              placeholder={t("ابحث بالاسم أو رقم الهاتف", "Search by name or phone")}
+              placeholder={t("ابحث بالاسم أو رقم الهاتف...", "Search by name or phone...")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="pl-10"
             />
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-50/35" aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8a34b]" aria-hidden="true" />
           </div>
           <Select
             value={filterSegment}
             onChange={(event) => setFilterSegment(event.target.value as CustomerSegment | "ALL")}
             aria-label={t("التصنيف", "Segment")}
           >
-            <option value="ALL">{t("كل التصنيفات", "All Segments")}</option>
+            <option value="ALL">{t("كل التصنيفات (All)", "All Segments")}</option>
             {SEGMENT_ORDER.map((segment) => (
               <option key={segment} value={segment}>
                 {getSegmentMeta(segment).label}
@@ -262,9 +265,9 @@ export function CustomersPage() {
             onChange={(event) => setSort(event.target.value as CustomerSort)}
             aria-label={t("الترتيب", "Sort")}
           >
-            <option value="recent">{t("الأحدث", "Recent")}</option>
+            <option value="recent">{t("الأحدث زيارة", "Recent Visit")}</option>
             <option value="spent">{t("الأعلى إنفاقاً", "Highest Spend")}</option>
-            <option value="name">{t("الاسم", "Name")}</option>
+            <option value="name">{t("الاسم أبجدياً", "Name (A-Z)")}</option>
           </Select>
         </div>
       </Card>
@@ -276,13 +279,13 @@ export function CustomersPage() {
           ))}
         </div>
       ) : isError ? (
-        <Card className="surface p-6">
+        <Card className="surface-glass p-6 text-center">
           <EmptyState
             icon={Users}
             title={t("تعذر تحميل العملاء", "Failed to load customers")}
             description={t("حدث خطأ أثناء الجلب. حاول مرة أخرى.", "An error occurred while loading. Please try again.")}
             action={
-              <Button type="button" onClick={() => void refetch()}>
+              <Button type="button" onClick={() => void refetch()} variant="primary">
                 <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 {t("إعادة المحاولة", "Retry")}
               </Button>
@@ -290,91 +293,98 @@ export function CustomersPage() {
           />
         </Card>
       ) : customers.length === 0 ? (
-        <Card className="surface p-6">
+        <Card className="surface-glass p-8 text-center">
           <EmptyState
             icon={Users}
-            title={t("لا يوجد عملاء", "No Customers")}
-            description={t("أضف أول عميل أو استورد بيانات Foodics.", "Add your first customer or import Foodics data.")}
+            title={t("لا يوجد عملاء مطابقين", "No Customers Found")}
+            description={t("أضف أول عميل لكافيه ومحمصة عماد أفندي أو استورد بيانات فودكس.", "Add your first guest or import CSV orders.")}
             action={
-              <Button type="button" onClick={openCreate}>
+              <Button type="button" onClick={openCreate} variant="primary">
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                {t("إضافة عميل", "Add Customer")}
+                {t("إضافة عميل جديد", "Add New Customer")}
               </Button>
             }
           />
         </Card>
       ) : (
         <>
-          <Card className="surface overflow-hidden hidden md:block">
-            <table className="w-full text-right">
-              <thead className="bg-brand-950/5 text-xs font-bold text-brand-50/60">
+          <Card className="surface-glass overflow-hidden hidden md:block border border-[#d4af37]/15 p-0">
+            <table className="w-full text-start">
+              <thead className="bg-[#0d0f11] text-xs font-bold text-[#c8a34b] border-b border-[#d4af37]/20">
                 <tr>
-                  <th className="px-4 py-3 font-bold">{t("العميل", "Customer")}</th>
-                  <th className="px-4 py-3 font-bold">{t("الهاتف", "Phone")}</th>
-                  <th className="px-4 py-3 font-bold">{t("التصنيف", "Segment")}</th>
-                  <th className="px-4 py-3 font-bold">{t("الإنفاق", "Spending")}</th>
-                  <th className="px-4 py-3 font-bold">{t("آخر زيارة", "Last Visit")}</th>
-                  <th className="px-4 py-3 font-bold">{t("إجراءات", "Actions")}</th>
+                  <th className="px-5 py-3.5 text-start font-black">{t("العميل", "Customer")}</th>
+                  <th className="px-5 py-3.5 text-start font-black">{t("الهاتف", "Phone")}</th>
+                  <th className="px-5 py-3.5 text-start font-black">{t("التصنيف (RFM)", "Segment")}</th>
+                  <th className="px-5 py-3.5 text-start font-black">{t("إجمالي الإنفاق", "Total Spent")}</th>
+                  <th className="px-5 py-3.5 text-start font-black">{t("آخر زيارة", "Last Visit")}</th>
+                  <th className="px-5 py-3.5 text-center font-black">{t("إجراءات", "Actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-brand-950/10">
+              <tbody className="divide-y divide-white/5">
                 {customers.map((customer) => (
-                  <tr key={customer.id} className="transition hover:bg-white/5 focus-ring">
-                    <td className="px-4 py-3">
+                  <tr key={customer.id} className="transition-colors hover:bg-white/5">
+                    <td className="px-5 py-3.5">
                       <button
                         type="button"
                         onClick={() => openDetail(customer)}
-                        className="flex items-center gap-3 rounded-xl p-1 text-right transition hover:bg-white/5 focus-ring"
+                        className="group flex items-center gap-3 text-start transition focus:outline-none"
                       >
                         <Avatar name={customer.full_name} size="sm" />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-bold text-brand-950">
+                          <span className="block truncate text-sm font-bold text-[#F5EFE6] group-hover:text-[#f5d36e] transition">
                             {customer.full_name}
                           </span>
-                          <span className="block text-xs text-brand-50/55">
-                            {formatNumber(customer.orders_count)} {t("عملية", "orders")}
+                          <span className="block text-xs text-[#9CA3AF]">
+                            {formatNumber(customer.orders_count)} {t("طلب", "orders")}
                           </span>
                         </span>
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-sm text-brand-50/70">
+                    <td className="px-5 py-3.5 text-xs font-semibold text-[#9CA3AF]" dir="ltr">
                       {formatPhone(customer.phone_number)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3.5">
                       <SegmentBadge segment={customer.segment} />
                     </td>
-                    <td className="px-4 py-3 text-sm font-extrabold text-brand-950">
+                    <td className="px-5 py-3.5 text-sm font-black text-[#f5d36e]">
                       {formatCurrency(customer.total_spent)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-brand-50/60">
+                    <td className="px-5 py-3.5 text-xs text-[#9CA3AF]">
                       {formatDate(customer.last_seen_at)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3 rounded-2xl border border-brand-950/10 bg-white/60 p-3">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center justify-center gap-1.5 rounded-xl border border-white/5 bg-[#0d0f11] p-1 w-fit mx-auto">
+                        <button
+                          type="button"
+                          onClick={() => setPassCustomer(customer)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gold transition hover:bg-gold/15"
+                          title={t("كارت الولاء الرقمي VIP", "Digital Pass")}
+                        >
+                          <QrCode className="h-4 w-4" aria-hidden="true" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleWhatsApp(customer)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50/10 focus-ring"
-                          aria-label={t("واتساب", "WhatsApp")}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-400 transition hover:bg-emerald-500/15"
+                          title={t("إرسال رسالة واتساب", "Send WhatsApp")}
                         >
                           <MessageCircle className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={() => openEdit(customer)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-brand-50/60 transition hover:bg-white/5 focus-ring"
-                          aria-label={t("تعديل", "Edit")}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#c8a34b] transition hover:bg-white/10 hover:text-[#f5d36e]"
+                          title={t("تعديل العميل", "Edit")}
                         >
                           <Pencil className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={() => openDelete(customer)}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-red-500 transition hover:bg-red-500/10 focus-ring"
-                          aria-label={t("حذف", "Delete")}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-rose-400 transition hover:bg-rose-500/15"
+                          title={t("حذف العميل", "Delete")}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          {t("حذف", "Delete")}
                         </button>
                       </div>
                     </td>
@@ -384,44 +394,55 @@ export function CustomersPage() {
             </table>
           </Card>
 
-          <div className="space-y-4 md:hidden">
+          {/* Mobile Customers Cards */}
+          <div className="space-y-3 md:hidden">
             {customers.map((customer) => (
-              <Card key={customer.id} className="surface p-4">
+              <Card key={customer.id} className="surface-glass p-4 border border-[#d4af37]/15">
                 <div className="flex items-start gap-3">
                   <Avatar name={customer.full_name} />
                   <div className="min-w-0 flex-1">
                     <button
                       type="button"
                       onClick={() => openDetail(customer)}
-                      className="block w-full rounded-card p-1 text-right transition hover:bg-white/5 focus-ring"
+                      className="block w-full text-start focus:outline-none"
                     >
-                      <span className="block truncate text-sm font-bold text-brand-950">
+                      <span className="block truncate text-sm font-bold text-[#F5EFE6]">
                         {customer.full_name}
                       </span>
-                      <span className="block text-xs text-brand-50/55">
+                      <span className="block text-xs text-[#9CA3AF]" dir="ltr">
                         {formatPhone(customer.phone_number)}
                       </span>
                     </button>
                     <div className="mt-2 flex items-center gap-2">
                       <SegmentBadge segment={customer.segment} />
-                      <span className="text-xs text-brand-50/55">
-                        {formatNumber(customer.orders_count)} {t("عملية", "orders")}
+                      <span className="text-xs text-[#9CA3AF]">
+                        {formatNumber(customer.orders_count)} {t("طلب", "orders")}
                       </span>
                     </div>
                   </div>
-                  <span className="text-sm font-extrabold text-brand-50">
+                  <span className="text-sm font-black text-[#f5d36e]">
                     {formatCurrency(customer.total_spent)}
                   </span>
                 </div>
-                <div className="mt-4 flex items-center justify-end gap-2">
+                <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-white/5 pt-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setPassCustomer(customer)}
+                    className="border border-gold/30 text-gold"
+                  >
+                    <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>{t("الكارت", "Pass")}</span>
+                  </Button>
                   <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     onClick={() => handleWhatsApp(customer)}
                   >
-                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                    {t("واتساب", "WhatsApp")}
+                    <MessageCircle className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+                    <span>{t("واتساب", "WhatsApp")}</span>
                   </Button>
                   <Button
                     type="button"
@@ -429,8 +450,8 @@ export function CustomersPage() {
                     size="sm"
                     onClick={() => openEdit(customer)}
                   >
-                    <Pencil className="h-4 w-4" aria-hidden="true" />
-                    {t("تعديل", "Edit")}
+                    <Pencil className="h-3.5 w-3.5 text-[#c8a34b]" aria-hidden="true" />
+                    <span>{t("تعديل", "Edit")}</span>
                   </Button>
                   <Button
                     type="button"
@@ -438,17 +459,18 @@ export function CustomersPage() {
                     size="sm"
                     onClick={() => openDelete(customer)}
                   >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    {t("حذف", "Delete")}
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>{t("حذف", "Delete")}</span>
                   </Button>
                 </div>
               </Card>
             ))}
           </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-brand-50/55">
-              صفحة {page} من {totalPages} • {pluralizeCustomers(total)}
+          {/* Pagination */}
+          <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-4">
+            <p className="text-xs text-[#9CA3AF]">
+              {t(`صفحة ${page} من ${totalPages}`, `Page ${page} of ${totalPages}`)} • {pluralizeCustomers(total)}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -495,6 +517,12 @@ export function CustomersPage() {
         }}
         onDelete={(customer) => openDelete(customer)}
         onWhatsApp={(customer) => handleWhatsApp(customer)}
+      />
+
+      <CustomerPassModal
+        customer={passCustomer}
+        isOpen={Boolean(passCustomer)}
+        onClose={() => setPassCustomer(null)}
       />
     </div>
   );

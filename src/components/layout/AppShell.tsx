@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  Coffee,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -11,8 +10,10 @@ import {
   Upload,
   Users,
   X,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Misc";
@@ -27,10 +28,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: { ar: "لوحة التحكم", en: "Dashboard" }, icon: LayoutDashboard },
-  { to: "/customers", label: { ar: "العملاء", en: "Customers" }, icon: Users },
-  { to: "/cashier", label: { ar: "الكاشير", en: "Cashier" }, icon: ShoppingCart },
-  { to: "/import", label: { ar: "الاستيراد", en: "Import" }, icon: Upload },
-  { to: "/campaigns", label: { ar: "الحملات", en: "Campaigns" }, icon: Megaphone },
+  { to: "/customers", label: { ar: "قاعدة العملاء", en: "Customers" }, icon: Users },
+  { to: "/cashier", label: { ar: "الكاشير والنقاط", en: "Cashier & Points" }, icon: ShoppingCart },
+  { to: "/campaigns", label: { ar: "حملات الواتساب", en: "WhatsApp Campaigns" }, icon: Megaphone },
+  { to: "/import", label: { ar: "استيراد البيانات", en: "Data Import" }, icon: Upload },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -39,32 +40,50 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const isRtl = lang === "ar";
+
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
   const userName =
-    session?.user?.user_metadata?.full_name ?? session?.user?.email ?? "مستخدم";
+    session?.user?.user_metadata?.full_name ??
+    session?.user?.email?.split("@")[0] ??
+    t("كاشير عماد أفندي", "Emad Afandi Staff");
   const userEmail = session?.user?.email ?? "";
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-brand-950 text-cream">
-      <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+    <div className="flex h-full flex-col bg-[#0a0b0d] border-x border-[#d4af37]/20 text-[#F5EFE6] select-none">
+      {/* Brand Header */}
+      <div className="flex items-center justify-between border-b border-[#d4af37]/15 px-5 py-4 bg-[#07080a]">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gold-400 text-brand-950 shadow-gold">
-            <Coffee className="h-5 w-5" aria-hidden="true" />
-          </span>
+          <div className="relative flex h-11 w-12 items-center justify-center">
+            <img
+              src="/assets/logo.png?v=2"
+              alt="عماد أفندي"
+              className="h-full w-full object-contain filter drop-shadow-[0_2px_8px_rgba(212,175,55,0.3)] transition-transform duration-300 hover:scale-105"
+            />
+          </div>
           <div className="min-w-0">
-            <p className="text-sm font-extrabold">BaristaCRM</p>
-            <p className="text-xs text-cream/50">إدارة عملاء الكافيه</p>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-sm tracking-wide text-[#F5EFE6]">
+                {t("عماد أفندي", "EMAD AFANDI")}
+              </span>
+              <Sparkles className="h-3 w-3 text-[#d4af37]" />
+            </div>
+            <p className="text-[11px] font-medium text-[#c8a34b] truncate">
+              {t("إدارة علاقات العملاء", "Cafe & Roastery CRM")}
+            </p>
           </div>
         </div>
         <LanguageToggle />
       </div>
 
-      <nav className="flex-1 space-y-1 px-4 py-5">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1.5 px-3 py-5 overflow-y-auto no-scrollbar">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+          const isActive = location.pathname === item.to;
 
           return (
             <NavLink
@@ -73,36 +92,43 @@ export function AppShell({ children }: { children: ReactNode }) {
               end={item.to === "/"}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition",
+                  "group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-xs font-bold transition-all duration-200",
                   isActive
-                    ? "bg-gold-400 text-brand-950 shadow-gold font-extrabold"
-                    : "text-cream/70 hover:bg-white/5 hover:text-cream",
+                    ? "bg-gradient-to-r from-[#d4af37] to-[#f5d36e] text-[#000000] font-black shadow-lg shadow-[#d4af37]/25"
+                    : "text-[#F5EFE6]/75 hover:bg-[#15181b] hover:text-[#f5d36e] hover:border-r-2 hover:border-[#d4af37]"
                 )
               }
             >
-              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              <span>{t(item.label.ar, item.label.en)}</span>
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110",
+                  isActive ? "text-[#000000]" : "text-[#d4af37]"
+                )}
+                aria-hidden="true"
+              />
+              <span className="truncate">{t(item.label.ar, item.label.en)}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/5 p-3">
-          <Avatar name={userName} size="sm" />
+      {/* User Card & Logout */}
+      <div className="border-t border-[#d4af37]/15 p-4 bg-[#07080a]">
+        <div className="mb-3 flex items-center gap-3 rounded-xl bg-[#131618] border border-[#d4af37]/20 p-2.5">
+          <Avatar name={userName} size="sm" className="ring-1 ring-[#d4af37]/50" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold text-cream">{userName}</p>
+            <p className="truncate text-xs font-bold text-[#F5EFE6]">{userName}</p>
             {userEmail && (
-              <p className="truncate text-[11px] text-cream/50">{userEmail}</p>
+              <p className="truncate text-[10px] text-[#9CA3AF]">{userEmail}</p>
             )}
           </div>
         </div>
         <button
           type="button"
           onClick={() => void signOut()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-300 transition-all duration-200 hover:bg-rose-600 hover:text-white active:scale-95"
         >
-          <LogOut className="h-4 w-4" aria-hidden="true" />
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
           <span>{t("تسجيل الخروج", "Sign out")}</span>
         </button>
       </div>
@@ -110,38 +136,85 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-cream">
-      <aside className="fixed inset-y-0 right-0 z-30 hidden w-72 lg:block">
+    <div className="min-h-screen bg-[#060709] text-[#F5EFE6]">
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 z-30 hidden w-72 lg:block",
+          isRtl ? "right-0" : "left-0"
+        )}
+      >
         {sidebarContent}
       </aside>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="fixed inset-y-0 right-0 w-72 shadow-2xl">
-            {sidebarContent}
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              initial={{ x: isRtl ? "100%" : "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: isRtl ? "100%" : "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className={cn(
+                "fixed inset-y-0 w-72 shadow-2xl z-50",
+                isRtl ? "right-0" : "left-0"
+              )}
+            >
+              <div className="relative h-full">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="absolute top-4 left-4 z-50 p-1.5 rounded-lg bg-black/40 text-cream/70 hover:text-cream"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                {sidebarContent}
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-      <div className="lg:pr-72">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-brand-950/10 bg-brand-950 px-4 py-3 text-cream lg:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-cream transition hover:bg-white/10"
-            aria-label="فتح القائمة"
-          >
-            <Menu className="h-5 w-5" aria-hidden="true" />
-          </button>
-          <span className="text-sm font-extrabold text-gold-400">BaristaCRM</span>
+      {/* Main Content Area */}
+      <div className={cn(isRtl ? "lg:pr-72" : "lg:pl-72")}>
+        {/* Mobile Header */}
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#d4af37]/20 bg-[#0a0b0d]/95 backdrop-blur-md px-4 py-3 lg:hidden">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#d4af37]/30 bg-[#131618] text-[#d4af37] transition hover:bg-[#d4af37] hover:text-black"
+              aria-label="القائمة"
+            >
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src="/assets/logo.png?v=2" alt="لوجو" className="h-8 w-9 object-contain filter drop-shadow" />
+              <span className="text-sm font-extrabold text-[#f5d36e]">
+                {t("عماد أفندي", "EMAD AFANDI")}
+              </span>
+            </div>
+          </div>
           <LanguageToggle />
         </header>
 
-        <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* Dynamic Animated Page Content */}
+        <motion.main
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8"
+        >
+          {children}
+        </motion.main>
       </div>
     </div>
   );

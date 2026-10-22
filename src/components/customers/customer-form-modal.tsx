@@ -72,7 +72,7 @@ export function CustomerFormModal({
         {formError && (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700"
+            className="rounded-xl border border-rose-500/30 bg-rose-500/15 p-3 text-xs font-bold text-rose-300"
           >
             {formError}
           </div>

@@ -14,17 +14,22 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-brand-950 text-cream hover:bg-brand-900 shadow-soft",
-  secondary: "border border-brand-950/15 bg-white text-brand-950 hover:bg-brand-50",
-  ghost: "text-brand-950 hover:bg-brand-950/5",
-  danger: "bg-red-600 text-white hover:bg-red-700",
-  gold: "bg-gold-400 text-brand-950 hover:bg-gold-500 shadow-soft",
+  primary:
+    "bg-gradient-to-r from-[#d4af37] to-[#f5d36e] text-[#000000] font-black hover:brightness-110 shadow-md shadow-[#d4af37]/20 active:scale-95",
+  secondary:
+    "border border-[#d4af37]/25 bg-[#1a1d1f] text-[#F5EFE6] hover:bg-[#22262a] hover:border-[#d4af37] hover:text-[#f5d36e] active:scale-95",
+  ghost:
+    "text-[#F5EFE6]/80 hover:bg-white/5 hover:text-[#f5d36e] active:scale-95",
+  danger:
+    "border border-rose-500/30 bg-rose-500/15 text-rose-300 hover:bg-rose-600 hover:text-white active:scale-95",
+  gold:
+    "bg-gradient-to-r from-[#d4af37] to-[#f5d36e] text-[#000000] font-black hover:brightness-110 shadow-lg shadow-[#d4af37]/30 active:scale-95",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-xs gap-1.5",
-  md: "h-11 px-4 text-sm gap-2",
-  lg: "h-12 px-6 text-base gap-2",
+  sm: "h-9 px-3.5 text-xs gap-1.5 rounded-xl",
+  md: "h-11 px-5 text-sm gap-2 rounded-xl",
+  lg: "h-12 px-6 text-base gap-2.5 rounded-2xl",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -48,7 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        "inline-flex items-center justify-center rounded-2xl font-semibold transition focus-ring disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 disabled:cursor-not-allowed disabled:opacity-50",
         sizeClasses[size],
         variantClasses[variant],
         fullWidth && "w-full",
@@ -56,7 +61,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       )}
       {...props}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+      {loading && <Loader2 className="h-4 w-4 animate-spin text-current" aria-hidden="true" />}
       {children}
     </button>
   )

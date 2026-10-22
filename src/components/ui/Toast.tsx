@@ -37,15 +37,15 @@ const TOAST_DURATION = 4000;
 
 const variantStyles: Record<ToastVariant, { card: string; icon: LucideIcon }> = {
   success: {
-    card: "border-emerald-200 bg-emerald-50/95 text-emerald-950",
+    card: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
     icon: CheckCircle2,
   },
   error: {
-    card: "border-red-200 bg-red-50/95 text-red-950",
+    card: "border-red-500/20 bg-red-500/10 text-red-300",
     icon: AlertCircle,
   },
   info: {
-    card: "border-gold-200 bg-gold-50/95 text-brand-950",
+    card: "border-gold-500/20 bg-gold-500/10 text-gold-300",
     icon: Info,
   },
 };
@@ -128,7 +128,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => dismissToast(toast.id)}
-                className="rounded-lg p-1 opacity-60 transition hover:bg-black/5 hover:opacity-100 focus-ring"
+                className="rounded-lg p-1 opacity-60 transition hover:bg-white/10 hover:opacity-100 focus-ring"
                 aria-label="إغلاق التنبيه"
               >
                 <X className="h-4 w-4" aria-hidden="true" />

@@ -1,0 +1,6 @@
+# Rules for AI Assistant
+- Do NOT read all files in the project. Read files on demand only.
+- For screenshot or UI edit requests, search for the visible text (English/Arabic) in the codebase using search tools to identify the component instantly.
+- Make targeted edits, do not rewrite whole files unnecessarily.
+- Keep token usage minimal and responses concise.
+- Tech stack: React + Vite + TypeScript + Tailwind CSS + Supabase.

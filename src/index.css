@@ -6,11 +6,17 @@
   html {
     scroll-behavior: smooth;
     font-feature-settings: 'ss01';
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   body {
-    @apply antialiased font-sans;
+    @apply antialiased font-sans select-none;
     background-color: #060709;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     background-image: 
       radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
       radial-gradient(rgba(212, 175, 55, 0.12) 1px, transparent 1px),

@@ -10,3 +10,6 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 *.log
+*.csv
+customers_raw.csv
+import_customers.py

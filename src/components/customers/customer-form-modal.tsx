@@ -35,6 +35,9 @@ export function CustomerFormModal({
   const [preferredSeating, setPreferredSeating] = useState(editing?.preferred_seating ?? "");
   const [customNotes, setCustomNotes] = useState(editing?.custom_notes ?? "");
   const [formSegment, setFormSegment] = useState<CustomerSegment>(editing?.segment ?? "CUSTOM");
+  const [roastPreference, setRoastPreference] = useState(editing?.roast_preference ?? "");
+  const [grindPreference, setGrindPreference] = useState(editing?.grind_preference ?? "");
+  const [flavorNotes, setFlavorNotes] = useState(editing?.flavor_notes_preference ?? "");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,6 +50,9 @@ export function CustomerFormModal({
       preferred_seating: preferredSeating.trim() || null,
       custom_notes: customNotes.trim() || null,
       segment: formSegment,
+      roast_preference: (roastPreference as any) || null,
+      grind_preference: (grindPreference as any) || null,
+      flavor_notes_preference: flavorNotes.trim() || null,
     };
     await onSubmit(input);
   };
@@ -121,6 +127,35 @@ export function CustomerFormModal({
 
           <Field label={t("المكان المفضل", "Preferred Seating")} htmlFor="preferredSeating">
             <Input id="preferredSeating" value={preferredSeating} onChange={(event) => setPreferredSeating(event.target.value)} placeholder="ركن الهدوء" />
+          </Field>
+
+          <Field label={t("درجة التحميص المفضلة (Roast)", "Preferred Roast")} htmlFor="roast">
+            <Select id="roast" value={roastPreference} onChange={(event) => setRoastPreference(event.target.value)}>
+              <option value="">{t("غير محدد", "Not specified")}</option>
+              <option value="LIGHT">{t("تحميص فاتح (Light)", "Light Roast")}</option>
+              <option value="MEDIUM">{t("تحميص وسط متوازن (Medium)", "Medium Roast")}</option>
+              <option value="DARK">{t("تحميص غامق كثيف (Dark)", "Dark Roast")}</option>
+            </Select>
+          </Field>
+
+          <Field label={t("طريقة ونعومة الطحن (Grind)", "Grind Size")} htmlFor="grind">
+            <Select id="grind" value={grindPreference} onChange={(event) => setGrindPreference(event.target.value)}>
+              <option value="">{t("غير محدد", "Not specified")}</option>
+              <option value="WHOLE_BEAN">{t("حبوب بن كاملة (Whole Bean)", "Whole Bean")}</option>
+              <option value="TURKISH">{t("طحنة تركي ناعمة جداً", "Extra-Fine Turkish")}</option>
+              <option value="ESPRESSO">{t("طحنة اسبريسو ناعمة", "Fine Espresso")}</option>
+              <option value="V60_FILTER">{t("طحنة فلتر V60 / كيمكس", "Medium V60 / Filter")}</option>
+              <option value="FRENCH_PRESS">{t("طحنة فرنش برس / كولد برو", "Coarse French Press")}</option>
+            </Select>
+          </Field>
+
+          <Field label={t("الإيحاءات والنكهات المفضلة", "Flavor Profile")} htmlFor="flavorNotes" className="sm:col-span-2">
+            <Input
+              id="flavorNotes"
+              value={flavorNotes}
+              onChange={(event) => setFlavorNotes(event.target.value)}
+              placeholder="مثال: شوكولاتة وبندق، فواكه حمضية، كراميل..."
+            />
           </Field>
         </div>
 

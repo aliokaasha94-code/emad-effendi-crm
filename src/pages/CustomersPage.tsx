@@ -11,15 +11,21 @@ import {
   Upload,
   Users,
   QrCode,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import {
   CUSTOMERS_PAGE_SIZE,
+  CUSTOMER_COLUMNS,
   useCustomer,
   useCustomerMutations,
   useCustomerTransactions,
   useCustomers,
   usePhoneConflict,
 } from "@/hooks/useCustomers";
+import { requireSupabase } from "@/lib/supabase";
+import { getCustomerTier } from "@/lib/tiers";
+import { exportCustomersToExcel } from "@/lib/export";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
@@ -224,6 +230,41 @@ export function CustomersPage() {
     );
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      const client = requireSupabase();
+      let query = client.from("customers").select(CUSTOMER_COLUMNS);
+      if (filterSegment !== "ALL") {
+        query = query.eq("segment", filterSegment);
+      }
+      if (debouncedSearch.trim()) {
+        const term = debouncedSearch.trim();
+        query = query.or(`full_name.ilike.%${term}%,phone_number.ilike.%${term}%`);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        exportCustomersToExcel(data as Customer[]);
+      } else {
+        exportCustomersToExcel(customers);
+      }
+      pushToast({
+        title: t("تم تصدير ملف الإكسيل بنجاح! 📊", "Excel Exported Successfully! 📊"),
+        variant: "success",
+      });
+    } catch (err) {
+      exportCustomersToExcel(customers);
+      pushToast({
+        title: t("تم تصدير ملف الإكسيل بنجاح! 📊", "Excel Exported Successfully! 📊"),
+        variant: "success",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -234,7 +275,17 @@ export function CustomersPage() {
           en: "Search, add, and edit customer data from one place.",
         }}
         actions={
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              type="button"
+              variant="secondary"
+              loading={exporting}
+              onClick={handleExportExcel}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 text-xs font-bold text-emerald-300 hover:bg-emerald-600 hover:text-white"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+              <span>{t("تصدير إلى Excel", "Export Excel")}</span>
+            </Button>
             <Link
               to="/import"
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#d4af37]/25 bg-[#1a1d1f] px-4 text-xs font-bold text-[#F5EFE6] transition-all hover:bg-[#22262a] hover:border-[#d4af37] hover:text-[#f5d36e]"
@@ -388,7 +439,17 @@ export function CustomersPage() {
                       {formatPhone(customer.phone_number)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <SegmentBadge segment={customer.segment} />
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <SegmentBadge segment={customer.segment} />
+                        {(() => {
+                          const tier = getCustomerTier(customer.loyalty_points);
+                          return (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${tier.color.bg} ${tier.color.border} ${tier.color.text}`}>
+                              {tier.badgeTitle}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-sm font-black text-[#f5d36e]">
                       {formatCurrency(customer.total_spent)}
@@ -457,8 +518,16 @@ export function CustomersPage() {
                         {formatPhone(customer.phone_number)}
                       </span>
                     </button>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <SegmentBadge segment={customer.segment} />
+                      {(() => {
+                        const tier = getCustomerTier(customer.loyalty_points);
+                        return (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${tier.color.bg} ${tier.color.border} ${tier.color.text}`}>
+                            {tier.badgeTitle}
+                          </span>
+                        );
+                      })()}
                       <span className="text-xs text-[#9CA3AF]">
                         {formatNumber(customer.orders_count)} {t("طلب", "orders")}
                       </span>

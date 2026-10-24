@@ -12,6 +12,8 @@ import {
   Receipt,
   QrCode,
   Sparkles,
+  MessageCircle,
+  Percent,
 } from "lucide-react";
 import {
   useCreateTransaction,
@@ -30,6 +32,8 @@ import { QuickMenuGrid } from "@/components/cashier/QuickMenuGrid";
 import { RewardRedemptionSection } from "@/components/cashier/RewardRedemptionSection";
 import { ShiftClosingModal } from "@/components/cashier/ShiftClosingModal";
 import { CustomerPassModal } from "@/components/customers/CustomerPassModal";
+import { getCustomerTier as getRoasteryTier, ROAST_PREFERENCES, GRIND_PREFERENCES } from "@/lib/tiers";
+import { openWhatsApp } from "@/lib/whatsapp";
 import { getCustomerTier, type RewardCatalogItem } from "@/lib/rewards";
 import {
   formatCurrency,
@@ -80,6 +84,11 @@ export function CashierPage() {
   const [amount, setAmount] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [itemsSummary, setItemsSummary] = useState("");
+  const [lastOrderReceipt, setLastOrderReceipt] = useState<{
+    customer: Customer;
+    amount: number;
+    points: number;
+  } | null>(null);
 
   const parsedAmount = Number(amount);
   const amountError =
@@ -168,6 +177,11 @@ export function CashierPage() {
       });
 
       const points = Math.floor(parsedAmount / 10);
+      setLastOrderReceipt({
+        customer: selectedCustomer,
+        amount: parsedAmount,
+        points,
+      });
       pushToast({
         title: t("تم تسجيل العملية بنجاح! 🎉", "Order Recorded Successfully! 🎉"),
         description: t(
@@ -189,6 +203,32 @@ export function CashierPage() {
   };
 
   const selectedTier = selectedCustomer ? getCustomerTier(selectedCustomer) : null;
+  const roasteryTier = selectedCustomer ? getRoasteryTier(selectedCustomer.loyalty_points) : null;
+
+  const applyTierDiscount = () => {
+    if (!roasteryTier || roasteryTier.discountRate <= 0 || !parsedAmount || parsedAmount <= 0) return;
+    const discounted = Math.round(parsedAmount * (1 - roasteryTier.discountRate));
+    setAmount(String(discounted));
+    pushToast({
+      title: t(
+        `تم تطبيق خصم ${roasteryTier.badgeTitle} بنسبة ${roasteryTier.discountRate * 100}%`,
+        `Applied ${roasteryTier.discountRate * 100}% discount`
+      ),
+      variant: "info",
+    });
+  };
+
+  const handleSendWhatsAppReceipt = (details: { customer: Customer; amount: number; points: number }) => {
+    const tier = getRoasteryTier((details.customer.loyalty_points || 0) + details.points);
+    const text = `أهلاً بحضرتك يا أ/ ${details.customer.full_name} في عماد أفندي للقهوة المختصة والمحمصة ☕✨
+تم تسجيل زيارتك اليوم بقيمة ${details.amount} ج.م بنجاح!
+النقاط المكتسبة اليوم: +${details.points} نقطة ولاء.
+رصيد نقاطك الحالي: ${(details.customer.loyalty_points || 0) + details.points} نقطة (${tier.badgeTitle}).
+${tier.discountRate > 0 ? `فئتك تمنحك خصماً خاصاً بنسبة ${tier.discountRate * 100}% على مشترياتك!` : ""}
+شكراً لاختيارك عماد أفندي ويسعدنا دائماً خدمتك! 🤍`;
+    openWhatsApp(details.customer.phone_number, text);
+    setLastOrderReceipt(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -320,16 +360,16 @@ export function CashierPage() {
                       <p className="text-sm font-black text-[#F5EFE6]">
                         {selectedCustomer.full_name}
                       </p>
-                      {selectedTier && (
+                      {roasteryTier && (
                         <span
-                          className="px-2 py-0.5 rounded text-[10px] font-bold border"
-                          style={{
-                            backgroundColor: selectedTier.badgeBg,
-                            borderColor: selectedTier.badgeBorder,
-                            color: selectedTier.textColor,
-                          }}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${roasteryTier.color.bg} ${roasteryTier.color.border} ${roasteryTier.color.text}`}
                         >
-                          {lang === "ar" ? selectedTier.nameAr : selectedTier.nameEn}
+                          {roasteryTier.badgeTitle}
+                        </span>
+                      )}
+                      {roasteryTier && roasteryTier.discountRate > 0 && (
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                          {t(`خصم ${roasteryTier.discountRate * 100}%`, `${roasteryTier.discountRate * 100}% VIP Off`)}
                         </span>
                       )}
                     </div>
@@ -343,6 +383,19 @@ export function CashierPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    onClick={() => {
+                      const msg = `أهلاً بحضرتك يا أ/ ${selectedCustomer.full_name} في عماد أفندي للقهوة المختصة ☕✨
+يسعدنا دائماً خدمتك! رصيد نقاطك الحالي: ${selectedCustomer.loyalty_points || 0} نقطة (${roasteryTier?.badgeTitle || ""}).`;
+                      openWhatsApp(selectedCustomer.phone_number, msg);
+                    }}
+                    className="text-xs flex items-center gap-1.5 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  >
+                    <MessageCircle size={14} />
+                    <span>{t("واتساب 📲", "WhatsApp")}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
                     onClick={() => setShowPassModal(true)}
                     className="text-xs flex items-center gap-1.5 border border-gold/40 text-gold hover:bg-gold/10"
                   >
@@ -352,6 +405,53 @@ export function CashierPage() {
                 </div>
               </div>
 
+              {/* Barista Coffee Taste Profile Alert */}
+              {(selectedCustomer.favorite_drink || selectedCustomer.roast_preference || selectedCustomer.grind_preference || selectedCustomer.flavor_notes_preference || selectedCustomer.custom_notes) && (
+                <div className="rounded-2xl border border-amber-500/30 bg-[#16130d]/90 p-4 shadow-lg backdrop-blur">
+                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-amber-500/20">
+                    <span className="flex items-center gap-2 text-xs font-black text-amber-400">
+                      <span>☕</span>
+                      <span>{t("بروفايل ذوق العميل في القهوة (Barista Taste Profile)", "Barista Taste Profile")}</span>
+                    </span>
+                    {selectedCustomer.favorite_drink && (
+                      <span className="text-xs font-bold text-amber-200 bg-amber-500/25 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
+                        {t("المشروب المفضل:", "Favorite:")} {selectedCustomer.favorite_drink}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {selectedCustomer.roast_preference && (
+                      <div className="flex items-center gap-1.5 text-neutral-300">
+                        <span className="text-gold font-bold">{t("التحميص:", "Roast:")}</span>
+                        <span>
+                          {ROAST_PREFERENCES.find(r => r.value === selectedCustomer.roast_preference)?.label[lang === "ar" ? "ar" : "en"] || selectedCustomer.roast_preference}
+                        </span>
+                      </div>
+                    )}
+                    {selectedCustomer.grind_preference && (
+                      <div className="flex items-center gap-1.5 text-neutral-300">
+                        <span className="text-gold font-bold">{t("الطحن:", "Grind:")}</span>
+                        <span>
+                          {GRIND_PREFERENCES.find(g => g.value === selectedCustomer.grind_preference)?.label[lang === "ar" ? "ar" : "en"] || selectedCustomer.grind_preference}
+                        </span>
+                      </div>
+                    )}
+                    {selectedCustomer.flavor_notes_preference && (
+                      <div className="sm:col-span-2 flex items-center gap-1.5 text-neutral-300">
+                        <span className="text-gold font-bold">{t("الإيحاءات:", "Notes:")}</span>
+                        <span className="text-amber-200/90 font-medium">{selectedCustomer.flavor_notes_preference}</span>
+                      </div>
+                    )}
+                    {selectedCustomer.custom_notes && (
+                      <div className="sm:col-span-2 flex items-center gap-1.5 text-neutral-400 italic">
+                        <span className="text-gold font-bold not-italic">{t("ملاحظات الكاشير:", "Staff Notes:")}</span>
+                        <span>{selectedCustomer.custom_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Reward Redemption Component */}
               <RewardRedemptionSection
                 customer={selectedCustomer}
@@ -359,6 +459,48 @@ export function CashierPage() {
                 redeeming={redeeming}
               />
             </>
+          )}
+
+          {/* Post-Transaction WhatsApp Receipt Prompt */}
+          {lastOrderReceipt && (
+            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl backdrop-blur">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                  <Receipt className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">
+                    {t("تم تسجيل طلب بقيمة", "Recorded order of")}{" "}
+                    <span className="text-emerald-400 font-black">{formatCurrency(lastOrderReceipt.amount)}</span>{" "}
+                    {t("لـ", "for")} {lastOrderReceipt.customer.full_name} (+{lastOrderReceipt.points} {t("نقطة", "pts")})
+                  </p>
+                  <p className="text-[11px] text-emerald-300/80">
+                    {t("هل تريد إرسال إشعار فوري للعميل على واتساب بالنقاط؟", "Send instant WhatsApp receipt & loyalty update?")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleSendWhatsAppReceipt(lastOrderReceipt)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>{t("إرسال واتساب 📲", "Send WhatsApp 📲")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLastOrderReceipt(null)}
+                  className="text-xs text-neutral-400 hover:text-white"
+                >
+                  {t("إلغاء", "Dismiss")}
+                </Button>
+              </div>
+            </div>
           )}
 
           {/* Quick Drinks & Desserts Menu Grid */}
@@ -401,6 +543,16 @@ export function CashierPage() {
                     +{formatNumber(val)} {t("ج.م", "EGP")}
                   </button>
                 ))}
+                {roasteryTier && roasteryTier.discountRate > 0 && parsedAmount > 0 && (
+                  <button
+                    type="button"
+                    onClick={applyTierDiscount}
+                    className="rounded-lg border border-gold/40 bg-gold/15 px-3 py-1.5 text-xs font-black text-gold transition-all hover:bg-gold hover:text-black flex items-center gap-1 active:scale-95"
+                  >
+                    <Percent className="h-3 w-3" />
+                    <span>{t(`خصم ${roasteryTier.badgeTitle} (-${roasteryTier.discountRate * 100}%)`, `Apply -${roasteryTier.discountRate * 100}%`)}</span>
+                  </button>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 pt-2">

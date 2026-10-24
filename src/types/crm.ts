@@ -28,6 +28,9 @@ export interface Customer {
   last_seen_at: string | null;
   segment: CustomerSegment;
   rfm_score: number | null;
+  roast_preference?: "LIGHT" | "MEDIUM" | "DARK" | null;
+  grind_preference?: "WHOLE_BEAN" | "TURKISH" | "ESPRESSO" | "V60_FILTER" | "FRENCH_PRESS" | null;
+  flavor_notes_preference?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +71,9 @@ export interface CustomerInput {
   preferred_seating?: string | null;
   custom_notes?: string | null;
   segment?: CustomerSegment;
+  roast_preference?: "LIGHT" | "MEDIUM" | "DARK" | null;
+  grind_preference?: "WHOLE_BEAN" | "TURKISH" | "ESPRESSO" | "V60_FILTER" | "FRENCH_PRESS" | null;
+  flavor_notes_preference?: string | null;
 }
 
 export interface TransactionInput {

@@ -23,7 +23,7 @@ export const IMPORT_CHUNK_SIZE = 200;
 export const SEGMENT_RECIPIENTS_LIMIT = 1000;
 
 export const CUSTOMER_COLUMNS =
-  "id, full_name, phone_number, email, date_of_birth, favorite_drink, preferred_seating, custom_notes, total_spent, orders_count, loyalty_points, first_seen_at, last_seen_at, segment, rfm_score, created_at, updated_at";
+  "id, full_name, phone_number, email, date_of_birth, favorite_drink, preferred_seating, custom_notes, total_spent, orders_count, loyalty_points, first_seen_at, last_seen_at, segment, rfm_score, roast_preference, grind_preference, flavor_notes_preference, created_at, updated_at";
 
 const CUSTOMERS_ERROR = "تعذر تحميل بيانات العملاء. حاول مرة أخرى.";
 const CUSTOMER_ERROR = "تعذر تحميل بيانات العميل. حاول مرة أخرى.";
@@ -52,6 +52,9 @@ interface CustomerPayload {
   preferred_seating: string | null;
   custom_notes: string | null;
   segment?: CustomerSegment;
+  roast_preference?: string | null;
+  grind_preference?: string | null;
+  flavor_notes_preference?: string | null;
 }
 
 export interface UpdateCustomerVariables {
@@ -82,6 +85,9 @@ function normalizeCustomerInput(input: CustomerInput): CustomerPayload {
     favorite_drink: input.favorite_drink?.trim() || null,
     preferred_seating: input.preferred_seating?.trim() || null,
     custom_notes: input.custom_notes?.trim() || null,
+    roast_preference: input.roast_preference || null,
+    grind_preference: input.grind_preference || null,
+    flavor_notes_preference: input.flavor_notes_preference?.trim() || null,
   };
   if (input.segment) {
     payload.segment = input.segment;

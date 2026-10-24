@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { Sparkles, Printer, Copy, Check, ShieldCheck, QrCode } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { getCustomerTier as getRoasteryTier, ROAST_PREFERENCES, GRIND_PREFERENCES } from "@/lib/tiers";
 import { getCustomerTier } from "@/lib/rewards";
 import { formatCurrency, formatPhone } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -48,6 +49,7 @@ export function CustomerPassModal({
   if (!customer) return null;
 
   const tier = getCustomerTier(customer);
+  const roasteryTier = getRoasteryTier(customer.loyalty_points);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(
@@ -111,15 +113,13 @@ export function CustomerPassModal({
             </div>
 
             <div
-              className="px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1.5 border shadow-sm"
-              style={{
-                backgroundColor: tier.badgeBg,
-                borderColor: tier.badgeBorder,
-                color: tier.textColor,
-              }}
+              className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 border shadow-sm ${roasteryTier.color.bg} ${roasteryTier.color.border} ${roasteryTier.color.text}`}
             >
               <Sparkles size={12} />
-              <span>{lang === "ar" ? tier.nameAr : tier.nameEn}</span>
+              <span>{roasteryTier.badgeTitle}</span>
+              {roasteryTier.discountRate > 0 && (
+                <span className="text-[10px] opacity-90">({roasteryTier.discountRate * 100}%)</span>
+              )}
             </div>
           </div>
 
@@ -133,9 +133,23 @@ export function CustomerPassModal({
                 {formatPhone(customer.phone_number)}
               </div>
               {customer.favorite_drink && (
-                <div className="text-[11px] text-gold/80 mt-2 flex items-center gap-1">
+                <div className="text-[11px] text-gold/90 mt-2 flex items-center gap-1 font-semibold">
                   <span>☕</span>
                   <span>{customer.favorite_drink}</span>
+                </div>
+              )}
+              {(customer.roast_preference || customer.grind_preference) && (
+                <div className="text-[10px] text-neutral-300 mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {customer.roast_preference && (
+                    <span className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                      🔥 {ROAST_PREFERENCES.find(r => r.value === customer.roast_preference)?.label[lang === "ar" ? "ar" : "en"] || customer.roast_preference}
+                    </span>
+                  )}
+                  {customer.grind_preference && (
+                    <span className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                      ⚙️ {GRIND_PREFERENCES.find(g => g.value === customer.grind_preference)?.label[lang === "ar" ? "ar" : "en"] || customer.grind_preference}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -168,6 +182,22 @@ export function CustomerPassModal({
             )}
             <div className="text-[10px] font-bold text-black tracking-widest uppercase mt-1">
               SCAN AT CASHIER
+            </div>
+          </div>
+
+          {/* Member Privileges / Perks */}
+          <div className="relative z-10 mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3 space-y-1.5">
+            <div className="text-[11px] font-bold text-gold flex items-center gap-1.5">
+              <Sparkles size={11} />
+              <span>{lang === "ar" ? `مزايا فئة ${roasteryTier.badgeTitle}:` : `${roasteryTier.badgeTitle} Perks:`}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-1 text-[10px] text-neutral-300">
+              {roasteryTier.perks.map((p, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <span className="text-gold">•</span>
+                  <span>{lang === "ar" ? p.ar : p.en}</span>
+                </div>
+              ))}
             </div>
           </div>
 
